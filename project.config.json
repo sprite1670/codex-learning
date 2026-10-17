@@ -1,0 +1,9 @@
+{
+  "description": "小羊三消微信小游戏",
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "sheep-match-mini-game",
+  "miniprogramRoot": "miniprogram/",
+  "libVersion": "3.4.3",
+  "setting": { "es6": true, "postcss": true, "minified": true, "urlCheck": false }
+}

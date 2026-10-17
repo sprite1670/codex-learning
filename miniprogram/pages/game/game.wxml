@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="hero">
+    <view class="eyebrow">SHEEP MATCH</view>
+    <view class="title">小羊三消</view>
+    <view class="subtitle">点击没有被遮住的牌，三个相同图案自动消除</view>
+  </view>
+  <view class="status-row">
+    <view class="stat"><text class="stat-label">关卡</text><text class="stat-value">{{level}}</text></view>
+    <view class="stat"><text class="stat-label">剩余</text><text class="stat-value">{{remaining}}</text></view>
+    <view class="stat"><text class="stat-label">步数</text><text class="stat-value">{{steps}}</text></view>
+  </view>
+  <view class="board">
+    <block wx:for="{{tiles}}" wx:key="id">
+      <view wx:if="{{!item.removed}}" class="tile {{item.available ? 'available' : 'covered'}}"
+        style="left: {{item.x}}rpx; top: {{item.y}}rpx; z-index: {{item.z}};" data-id="{{item.id}}" bindtap="pick">
+        <text class="tile-icon">{{item.icon}}</text><text class="tile-name">{{item.name}}</text>
+      </view>
+    </block>
+    <view wx:if="{{message}}" class="toast {{messageType}}">{{message}}</view>
+  </view>
+  <view class="tray-title">暂存槽 <text>{{tray.length}} / 7</text></view>
+  <view class="tray">
+    <block wx:for="{{tray}}" wx:key="index"><view class="tray-tile"><text>{{item.icon}}</text></view></block>
+    <block wx:for="{{emptySlots}}" wx:key="index"><view class="tray-empty"></view></block>
+  </view>
+  <button class="restart" bindtap="restart">重新开始</button>
+  <view class="tip">每次点击都会占用一个槽位。凑齐三个相同图案就会消除，槽位满了就挑战失败。</view>
+</view>

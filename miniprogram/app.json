@@ -1,0 +1,11 @@
+{
+  "pages": ["pages/game/game"],
+  "window": {
+    "navigationBarTitleText": "小羊三消",
+    "navigationBarBackgroundColor": "#fff9ed",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fff9ed"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
