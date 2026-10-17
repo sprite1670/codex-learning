@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>家务抽签</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#f5f4ed;color:#263e32;font-family:"Microsoft YaHei",sans-serif}
+main{max-width:650px;margin:auto;background:white;padding:28px;border-radius:22px;box-shadow:0 8px 35px #243b3210}
+h1{margin-top:0}p{line-height:1.7;color:#627267}label{display:block;margin:20px 0 8px;font-weight:bold}
+input,select,button{font:inherit;padding:13px;border-radius:10px;width:100%;border:1px solid #cbd6c7}
+button{margin-top:16px;background:#286246;color:white;border:0;cursor:pointer}button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #d6a735;outline-offset:3px}
+#result{background:#eef4e8;padding:22px;border-radius:14px;margin-top:22px;text-align:center;font-size:24px;font-weight:bold;overflow-wrap:anywhere}
+#result.drawing{background:#fff4cf;color:#80590a;animation:pulse .5s ease-in-out infinite alternate}
+@keyframes pulse{to{box-shadow:0 0 0 5px #e8bd5022}}
+@media(prefers-reduced-motion:reduce){#result.drawing{animation:none}}
+#error,#warning{color:#a13e29;font-size:14px}li{padding:12px 0;border-bottom:1px solid #eee;overflow-wrap:anywhere}
+#reset{background:#edf2e9;color:#286246}small{display:block;margin-top:18px;color:#627267;line-height:1.7}
+</style>
+<main>
+<h1>🎲 今天谁当家？</h1>
+<p>大家轮流输入名字，等待 5 秒揭晓结果。一人一次，结果不重复。</p>
+<form id="form">
+<label for="count">① 选择参与人数</label>
+<select id="count">
+<option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option>
+</select>
+<small>共 5 种结果，最多 5 人。第一次抽签后，本轮人数固定。</small>
+<label for="name">② 在这里输入你的名字</label>
+<input id="name" placeholder="例如：小明" maxlength="24" autocomplete="off" required>
+<button id="draw" type="submit">③ 点击抽签</button>
+</form>
+<p id="error" role="alert"></p>
+<div id="result" role="status">准备好了，就来抽一签！</div>
+<p id="progress"></p>
+<p id="pool"></p>
+<h2>本轮抽签记录</h2>
+<ol id="records"></ol>
+<button id="reset" type="button">重新开局</button>
+<p id="warning" hidden>当前浏览器无法保存进度，请保持页面打开。</p>
+<small>请在同一页面轮流参加，每人使用固定名字；重名者可以加编号。此游戏按名字区分参与者，无法识别改名重复参加。进度仅保存在当前浏览器中。</small>
+</main>
+<script>
+'use strict';
+const tasks = ['刷碗','扫地','沏茶','做饭','玩'];
+const key = 'housework-simple-v1';
+const $ = id => document.getElementById(id);
+const clean = s => s.normalize('NFKC').trim().replace(/\s+/g,' ');
+const identity = s => clean(s).toLowerCase();
+let state = {total:0,records:[]};
+let timer = null;
+function valid(s) {
+  if (!s || !Number.isInteger(s.total) || s.total<0 || s.total>5 ||
+      !Array.isArray(s.records) || s.records.length>s.total) return false;
+  if (s.revealAt !== undefined && (!Number.isFinite(s.revealAt) || s.revealAt<0 ||
+      (s.revealAt>0 && s.records.length===0))) return false;
+  const names=new Set(), results=new Set();
+  return s.records.every(r => {
+    if (!r || typeof r.name!=='string' || !clean(r.name) || r.name.length>24 || !tasks.includes(r.task)) return false;
+    if (names.has(identity(r.name)) || results.has(r.task)) return false;
+    names.add(identity(r.name)); results.add(r.task); return true;
+  });
+}
+try {
+  const saved=JSON.parse(localStorage.getItem(key));
+  if(valid(saved)) state=saved;
+} catch { $('warning').hidden=false; }
+function save() {
+  try {localStorage.setItem(key,JSON.stringify(state));}
+  catch {$('warning').hidden=false;}
+}
+function render() {
+  // Persist a reserved result immediately, but keep it hidden until five seconds pass.
+  if (state.revealAt && state.revealAt <= Date.now()) {
+    state.revealAt=0;
+    save();
+  }
+  const drawing=Boolean(state.revealAt && state.revealAt>Date.now());
+  const visibleRecords=drawing?state.records.slice(0,-1):state.records;
+  const done=state.total>0 && state.records.length===state.total;
+  $('count').disabled=state.total>0;
+  if(state.total) $('count').value=state.total;
+  $('name').disabled=done||drawing; $('draw').disabled=done||drawing;
+  $('reset').disabled=drawing;
+  $('draw').textContent=drawing?'正在抽签，请稍候…':done?'本轮已完成':'③ 点击抽签';
+  $('progress').textContent=drawing?`结果将在 ${Math.ceil((state.revealAt-Date.now())/1000)} 秒后揭晓…`:done?'本轮全部抽完啦！':state.total?
+    `已抽 ${state.records.length} / ${state.total} 人，请下一位输入名字。`:'选好人数，输入名字，就可以开始。';
+  const remaining=tasks.filter(t=>!visibleRecords.some(r=>r.task===t));
+  $('pool').textContent='剩余结果：'+(remaining.join('、')||'全部抽完');
+  $('records').replaceChildren();
+  for(const r of visibleRecords) {
+    const li=document.createElement('li'); li.textContent=r.name+' → '+r.task;
+    $('records').append(li);
+  }
+  const last=state.records[state.records.length-1];
+  $('result').classList.toggle('drawing',drawing);
+  $('result').setAttribute('aria-live',drawing?'off':'polite');
+  if(drawing) {
+    const frame=Math.floor((Date.now()-(state.revealAt-5000))/150);
+    $('result').textContent='🎲 '+tasks[((frame%tasks.length)+tasks.length)%tasks.length];
+    if(timer===null) timer=setInterval(()=>{
+      render();
+      if(!state.revealAt) ($('name').disabled?$('reset'):$('name')).focus();
+    },100);
+  } else {
+    $('result').textContent=last?last.name+' 抽中了：'+last.task:'准备好了，就来抽一签！';
+    if(timer!==null){clearInterval(timer);timer=null;}
+  }
+}
+$('form').addEventListener('submit',event=>{
+  event.preventDefault();
+  if(state.revealAt && state.revealAt>Date.now()) return;
+  if(state.total && state.records.length>=state.total) return;
+  const name=clean($('name').value);
+  if(!name || name.length>24){$('error').textContent='请输入 1～24 个字符的名字。';return;}
+  if(state.records.some(r=>identity(r.name)===identity(name))){
+    $('error').textContent='这个名字已经抽过了！请换下一位，重名者请加编号。';return;
+  }
+  const total=state.total||Number($('count').value);
+  if(!Number.isInteger(total)||total<1||total>5){$('error').textContent='参与人数必须为 1～5 人。';return;}
+  const remaining=tasks.filter(t=>!state.records.some(r=>r.task===t));
+  const data=new Uint32Array(1), limit=Math.floor(4294967296/remaining.length)*remaining.length;
+  try {do{crypto.getRandomValues(data);}while(data[0]>=limit);}
+  catch{$('error').textContent='请用新版 Edge、Chrome 或 Firefox 打开此文件。';return;}
+  state.total=total;
+  state.records.push({name,task:remaining[data[0]%remaining.length]});
+  state.revealAt=Date.now()+5000;
+  save(); $('error').textContent=''; $('name').value=''; render();
+  if(!$('name').disabled) $('name').focus();
+});
+$('reset').addEventListener('click',()=>{
+  if(state.revealAt && state.revealAt>Date.now()) return;
+  if(state.records.length && !confirm('清空本轮记录并重新开始？')) return;
+  state={total:0,records:[]}; save(); $('error').textContent=''; $('name').value=''; render(); $('count').focus();
+});
+render();
+</script>
+</html>
