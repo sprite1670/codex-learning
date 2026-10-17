@@ -4,6 +4,12 @@
 
 [下载家务抽签 APK（Android 8.0 及以上）](https://github.com/sprite1670/codex-learning/raw/refs/heads/main/downloads/household-lottery-1.0.apk)
 
+也可以在电脑上打开下面的二维码，用安卓手机扫描下载：
+
+![扫描下载家务抽签 APK](downloads/household-lottery-qr.png)
+
+[单独打开二维码图片](downloads/household-lottery-qr.png)。二维码直接指向上方 APK 地址；如果仓库为私有，手机浏览器需要先登录有权限的 GitHub 账号，二维码不会绕过访问权限。
+
 在安卓手机上下载后，用文件管理器打开 APK。按手机提示，允许当前浏览器或文件管理器安装此来源的应用，即可安装“家务抽签”。这是个人测试安装包，支持离线使用，不申请网络或存储权限。如果仓库设为私有，请先登录有权限的 GitHub 账号。
 
 打开后可以直接看到人数选择和姓名输入框。选择 1～5 人，依次输入名字、点击抽签即可。点击后播放 5 秒动画，五种结果轮番出现，再揭晓最终分工。动画期间不能重复点击或重新开局，结果揭晓后交给下一位输入。本轮进度保存在手机中。
